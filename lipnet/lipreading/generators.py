@@ -86,6 +86,7 @@ class BasicGenerator(keras.callbacks.Callback):
                 if os.path.isfile(video_path):
                     video = Video(self.vtype, self.face_predictor_path).from_video(video_path)
                 else:
+                    print('here')
                     video = Video(self.vtype, self.face_predictor_path).from_frames(video_path)
             except AttributeError as err:
                 raise err

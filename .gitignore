@@ -100,3 +100,14 @@ ENV/
 
 # mkdocs documentation
 /site
+
+# videos
+*.mp4
+*.cache
+*.h5
+
+# training
+training/unseen_speakers/datasets/
+training/unseen_speakers/logs/
+training/unseen_speakers/results/
+training/unseen_speakers_curriculum/datasets/

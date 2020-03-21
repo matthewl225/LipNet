@@ -8,6 +8,12 @@ class Align(object):
     def from_file(self, path):
         with open(path, 'r') as f:
             lines = f.readlines()
+        if not lines[0].strip().split(" ")[0].isdigit():
+            print('NOT HERE')
+            align = [(0,0,y.strip()) for y in lines]
+            self.build(align)
+            return self
+        print('HERE')
         align = [(int(y[0])/1000, int(y[1])/1000, y[2]) for y in [x.strip().split(" ") for x in lines]]
         self.build(align)
         return self
@@ -19,8 +25,13 @@ class Align(object):
     def build(self, align):
         self.align = self.strip(align, ['sp','sil'])
         self.sentence = self.get_sentence(align)
+        print(self.align)
+        print(self.sentence)
+        #passes in actual sentence into label function to get actual label
         self.label = self.get_label(self.sentence)
+        print(self.label)
         self.padded_label = self.get_padded_label(self.label)
+        print(self.padded_label)
 
     def strip(self, align, items):
         return [sub for sub in align if sub[2] not in items]

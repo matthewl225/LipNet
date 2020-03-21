@@ -7,6 +7,9 @@ import skvideo.io
 import dlib
 from lipnet.lipreading.aligns import Align
 
+INPUT_N = 75
+zero_pad = True
+
 class VideoAugmenter(object):
     @staticmethod
     def split_words(video, align):
@@ -139,6 +142,22 @@ class Video(object):
         mouth_frames = self.get_frames_mouth(detector, predictor, frames)
         self.face = np.array(frames)
         self.mouth = np.array(mouth_frames)
+        frames_n = len(mouth_frames)
+
+        padded_frames = np.zeros((INPUT_N,self.mouth.shape[1], self.mouth.shape[2], self.mouth.shape[3]), dtype=np.uint8)
+
+        diff_n = INPUT_N - frames_n
+        if diff_n < 0: # thsi video has more frames than 75
+            if diff_n & 1: # odd
+                self.mouth = self.mouth[diff_n/2:frames_n - (diff_n/2 + 1),:,:,:]
+            else: # even
+                self.mouth = self.mouth[diff_n/2:frames_n - (diff_n/2),:,:,:]
+        elif diff_n > 0: # less frames than 75
+            #print('here2')
+            padded_frames[diff_n/2:diff_n/2 + frames_n] = self.mouth
+            #print(padded_frames.shape)
+            self.mouth = padded_frames
+
         self.set_data(mouth_frames)
 
     def process_frames_mouth(self, frames):
@@ -205,6 +224,19 @@ class Video(object):
             data_frames.append(frame)
         frames_n = len(data_frames)
         data_frames = np.array(data_frames) # T x W x H x C
+        padded_frames = np.zeros((INPUT_N,data_frames.shape[1], data_frames.shape[2], data_frames.shape[3]))
+
+        diff_n = INPUT_N - frames_n
+        if diff_n < 0: # thsi video has more frames than 75
+            if diff_n & 1: # odd
+                data_frames = data_frames[diff_n/2:frames_n - (diff_n/2 + 1),:,:,:]
+            else: # even
+                data_frames = data_frames[diff_n/2:frames_n - (diff_n/2),:,:,:]
+        elif diff_n > 0: # less frames than 75
+            #print('here')
+            padded_frames[diff_n/2:diff_n/2 + frames_n] = data_frames
+            #print(padded_frames.shape)
+            data_frames = padded_frames
         if K.image_data_format() == 'channels_first':
             data_frames = np.rollaxis(data_frames, 3) # C x T x W x H
         self.data = data_frames
