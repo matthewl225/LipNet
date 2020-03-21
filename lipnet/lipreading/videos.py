@@ -8,6 +8,7 @@ import dlib
 from lipnet.lipreading.aligns import Align
 
 INPUT_N = 75
+
 zero_pad = True
 
 class VideoAugmenter(object):
