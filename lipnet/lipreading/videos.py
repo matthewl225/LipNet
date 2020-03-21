@@ -149,9 +149,11 @@ class Video(object):
 
         diff_n = INPUT_N - frames_n
         if diff_n < 0: # thsi video has more frames than 75
+            diff_n = diff_n * -1
             if diff_n & 1: # odd
                 self.mouth = self.mouth[diff_n/2:frames_n - (diff_n/2 + 1),:,:,:]
             else: # even
+                #print(diff_n/2,frames_n - (diff_n/2))
                 self.mouth = self.mouth[diff_n/2:frames_n - (diff_n/2),:,:,:]
         elif diff_n > 0: # less frames than 75
             #print('here2')
