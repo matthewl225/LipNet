@@ -25,8 +25,7 @@ class Statistics(keras.callbacks.Callback):
             output_batch    = next(self.generator)[0]
             num_proc        = min(output_batch['the_input'].shape[0], num_left)
             y_pred          = self.model_container.predict(output_batch['the_input'][0:num_proc])
-            input_length    = output_batch['input_length'][0:num_proc]
-            decoded_res     = self.decoder.decode(y_pred, input_length)
+            decoded_res     = self.decoder.decode(y_pred)
 
             for j in range(0, num_proc):
                 data.append((decoded_res[j], output_batch['source_str'][j]))
@@ -101,8 +100,7 @@ class Visualize(keras.callbacks.Callback):
         output_batch = next(self.generator)[0]
 
         y_pred       = self.model_container.predict(output_batch['the_input'][0:self.num_display_sentences])
-        input_length = output_batch['input_length'][0:self.num_display_sentences]
-        res          = self.decoder.decode(y_pred, input_length)
+        res          = self.decoder.decode(y_pred)
 
         with open(os.path.join(self.output_dir, 'e%02d.csv' % (epoch)), 'wb') as csvfile:
             csvw = csv.writer(csvfile)

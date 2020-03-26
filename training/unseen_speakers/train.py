@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard, CSVLogger, ModelCheckpoint
 from lipnet.lipreading.generators import BasicGenerator
@@ -40,29 +42,27 @@ def train(run_name, start_epoch, stop_epoch, img_c, img_w, img_h, frames_n, abso
 
     adam = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
-    # the loss calc occurs elsewhere, so use a dummy lambda func for the loss
-    lipnet.model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=adam)
+    lipnet.model.compile(loss='categorical_crossentropy', optimizer=adam, metrics = ['accuracy'])
 
     # load weight if necessary
     if start_epoch > 0:
         weight_file = os.path.join(OUTPUT_DIR, os.path.join(run_name, 'weights%02d.h5' % (start_epoch - 1)))
         lipnet.model.load_weights(weight_file)
 
-    spell = Spell(path=PREDICT_DICTIONARY)
-    decoder = Decoder(greedy=PREDICT_GREEDY, beam_width=PREDICT_BEAM_WIDTH,
-                      postprocessors=[labels_to_text, spell.sentence])
+    # spell = Spell(path=PREDICT_DICTIONARY)
+    decoder = Decoder()
 
     # define callbacks
     statistics  = Statistics(lipnet, lip_gen.next_val(), decoder, 256, output_dir=os.path.join(OUTPUT_DIR, run_name))
     visualize   = Visualize(os.path.join(OUTPUT_DIR, run_name), lipnet, lip_gen.next_val(), decoder, num_display_sentences=minibatch_size)
-    tensorboard = TensorBoard(log_dir=os.path.join(LOG_DIR, run_name))
-    csv_logger  = CSVLogger(os.path.join(LOG_DIR, "{}-{}.csv".format('training',run_name)), separator=',', append=True)
-    checkpoint  = ModelCheckpoint(os.path.join(OUTPUT_DIR, run_name, "weights{epoch:02d}.h5"), monitor='val_loss', save_weights_only=True, mode='auto', period=1)
+    # tensorboard = TensorBoard(log_dir=os.path.join(LOG_DIR, run_name))
+    # csv_logger  = CSVLogger(os.path.join(LOG_DIR, "{}-{}.csv".format('training',run_name)), separator=',', append=True)
+    checkpoint  = ModelCheckpoint(os.path.join(OUTPUT_DIR, run_name, "weights{epoch:02d}.h5"), monitor='val_loss', save_weights_only=True, mode='auto', period=3)
 
     lipnet.model.fit_generator(generator=lip_gen.next_train(),
                         steps_per_epoch=lip_gen.default_training_steps, epochs=stop_epoch,
                         validation_data=lip_gen.next_val(), validation_steps=lip_gen.default_validation_steps,
-                        callbacks=[checkpoint, statistics, visualize, lip_gen, tensorboard, csv_logger], 
+                        callbacks=[checkpoint, statistics, visualize, lip_gen], 
                         initial_epoch=start_epoch, 
                         verbose=1,
                         max_q_size=5,

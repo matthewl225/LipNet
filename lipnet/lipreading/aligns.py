@@ -28,9 +28,7 @@ class Align(object):
         print(self.align)
         print(self.sentence)
         #passes in actual sentence into label function to get actual label
-        self.label = self.get_label(self.sentence)
-        print(self.label)
-        self.padded_label = self.get_padded_label(self.label)
+        self.padded_label = self.get_padded_label(self.sentence)
         print(self.padded_label)
 
     def strip(self, align, items):
@@ -39,12 +37,13 @@ class Align(object):
     def get_sentence(self, align):
         return " ".join([y[-1] for y in align if y[-1] not in ['sp', 'sil']])
 
-    def get_label(self, sentence):
-        return self.label_func(sentence)
-
-    def get_padded_label(self, label):
-        padding = np.ones((self.absolute_max_string_len-len(label))) * -1
-        return np.concatenate((np.array(label), padding), axis=0)
+    def get_padded_label(self, sentence):
+        if sentence == "what is the weather":
+            return np.array([1,0,0]).astype(int)
+        elif sentence == "what time is it":
+            return np.array([0,1,0]).astype(int)
+        else:
+            return np.array([0,0,1]).astype(int)
 
     @property
     def word_length(self):
@@ -53,7 +52,3 @@ class Align(object):
     @property
     def sentence_length(self):
         return len(self.sentence)
-
-    @property
-    def label_length(self):
-        return len(self.label)

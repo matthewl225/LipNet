@@ -1,14 +1,16 @@
+import tensorflow as tf
+
 from keras.layers.convolutional import Conv3D, ZeroPadding3D
 from keras.layers.pooling import MaxPooling3D
-from keras.layers.core import Dense, Activation, SpatialDropout3D, Flatten
+from keras.layers.core import Dense, Activation, SpatialDropout3D, Flatten, Lambda
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import GRU
 from keras.layers.normalization import BatchNormalization
 from keras.layers import Input
-from keras.models import Model
+from keras.models import Model, Sequential
+from keras import losses as L
 from lipnet.core.layers import CTC
 from keras import backend as K
-
 
 class LipNet(object):
     def __init__(self, img_c=3, img_w=100, img_h=50, frames_n=75, absolute_max_string_len=32, output_size=28):
@@ -18,6 +20,7 @@ class LipNet(object):
         self.frames_n = frames_n
         self.absolute_max_string_len = absolute_max_string_len
         self.output_size = output_size
+        #self.model = Sequential()
         self.build()
 
     def build(self):
@@ -52,20 +55,28 @@ class LipNet(object):
         self.resh1 = TimeDistributed(Flatten())(self.maxp3)
 
         self.gru_1 = Bidirectional(GRU(256, return_sequences=True, kernel_initializer='Orthogonal', name='gru1'), merge_mode='concat')(self.resh1)
-        self.gru_2 = Bidirectional(GRU(256, return_sequences=True, kernel_initializer='Orthogonal', name='gru2'), merge_mode='concat')(self.gru_1)
+        self.gru_2 = Bidirectional(GRU(256, return_sequences=False, kernel_initializer='Orthogonal', name='gru2'), merge_mode='concat')(self.gru_1)
 
         # transforms RNN output to character activations:
-        self.dense1 = Dense(self.output_size, kernel_initializer='he_normal', name='dense1')(self.gru_2)
+        #self.flatten1 = Flatten()(self.gru_2)
+        self.dense1 = Dense(128, kernel_initializer='he_normal', name='dense1')(self.gru_2)
+        self.dense2 = Dense(3, kernel_initializer='he_normal', name='dense2', activation='softmax')(self.dense1)
+        print(K.int_shape(self.y_pred))
 
-        self.y_pred = Activation('softmax', name='softmax')(self.dense1)
+        self.y_pred = Activation('softmax', name='softmax')(self.dense2)
 
-        self.labels = Input(name='the_labels', shape=[self.absolute_max_string_len], dtype='float32')
-        self.input_length = Input(name='input_length', shape=[1], dtype='int64')
-        self.label_length = Input(name='label_length', shape=[1], dtype='int64')
+        # one hot encoding
+        self.labels = Input(name='the_labels', shape=[3], dtype='float32')
+        print("BUILD")
+        print(K.int_shape(self.labels))
+        #self.input_length = Input(name='input_length', shape=[1], dtype='int64')
+        #self.label_length = Input(name='label_length', shape=[1], dtype='int64')
 
-        self.loss_out = CTC('ctc', [self.y_pred, self.labels, self.input_length, self.label_length])
+        #self.loss_out = CTC('ctc', [self.y_pred, self.labels, self.input_length, self.label_length])
+        self.loss_out = Lambda(lambda x: K.categorical_crossentropy(x, self.labels))(self.y_pred)
+        #self.loss_out = CTC('ctc' , [self.labels, self.y_pred])
 
-        self.model = Model(inputs=[self.input_data, self.labels, self.input_length, self.label_length], outputs=self.loss_out)
+        self.model = Model(inputs=[self.input_data, self.labels], outputs=self.loss_out)
 
     def summary(self):
         Model(inputs=self.input_data, outputs=self.y_pred).summary()
